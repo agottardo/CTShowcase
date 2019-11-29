@@ -14,9 +14,15 @@ class ViewController: UIViewController {
     @IBOutlet weak var button: UIButton!
     
     override func viewDidAppear(_ animated: Bool) {
-        let showcase = CTShowcaseView(title: "New Feature!", message: "Here's a brand new button you can tap!", key: nil) { () -> Void in
-            print("dismissed")
-        }
+        let showcase = CTShowcaseView(title: "New Feature!",
+                                      message: "Here's a brand new button you can tap!",
+                                      key: nil,
+                                      dismissHandler: { () -> Void in
+                                        print("tapped outside")
+        },
+                                      tapInsideHandler: { () -> Void in
+                                        print("tapped inside")
+        }, showsDismissButton: true)
         
         let highlighter = CTDynamicGlowHighlighter()
         highlighter.highlightColor = UIColor.yellow
