@@ -15,6 +15,21 @@ open class CTShowcaseView: UIView {
     private struct CTGlobalConstants {
         static let DefaultAnimationDuration = 0.5
     }
+    
+    private struct DismissButtonConstants {
+        /// Title of the button
+        static let title: String = "X"
+        /// Margin from the top of the screen to the top of the dismiss button
+        static let topMargin: CGFloat = 40.0
+        /// Margin from the right side of the screen to the top of the dismiss button
+        static let rightMargin: CGFloat = 25.0
+        /// Width and height of the dismiss button
+        static let sideLength: CGFloat = 40.0
+        /// Font size of the "X" text
+        static let fontSize: CGFloat = 18.0
+        /// Corner radius for the button, dividing side length by two gives a circle
+        static let cornerRadius: CGFloat = sideLength / 2
+    }
 
     // MARK: Properties
    
@@ -27,6 +42,9 @@ open class CTShowcaseView: UIView {
     // Highlighter object that creates the highlighting effect
     public var highlighter: CTRegionHighlighter = CTStaticGlowHighlighter()
     
+    /// X button at the top-right
+    public var dismissButton: UIButton?
+    
     private let containerView: UIView = UIApplication.shared.keyWindow!
     private var targetView: UIView?
     private var targetRect: CGRect = CGRect.zero
@@ -36,6 +54,8 @@ open class CTShowcaseView: UIView {
     private var message = "message"
     private var key: String?
     private var dismissHandler: (() -> ())?
+    private var tapInsideHandler: (() -> ())?
+    private var showsDismissButton: Bool = false
     
     private var targetOffset = CGPoint.zero
     private var targetMargin: CGFloat = 0
@@ -43,6 +63,14 @@ open class CTShowcaseView: UIView {
     
     private var previousSize = CGSize.zero
     private var observing = false
+    
+    private var dismissButtonRect: CGRect {
+        typealias Constants = DismissButtonConstants
+        return CGRect(x: containerView.frame.size.width - Constants.rightMargin - Constants.sideLength,
+                      y: Constants.topMargin,
+                      width: Constants.sideLength,
+                      height: Constants.sideLength)
+    }
     
     // MARK: Class lifecyle
     
@@ -62,9 +90,17 @@ open class CTShowcaseView: UIView {
     - parameter title: Title to display in the showcase
     - parameter message: Message to display in the showcase
     - parameter key: An optional key to prevent the showcase from getting displayed again if it was displayed before
-    - parameter dismissHandler: An optional handler to be executed after the showcase is dismissed by tapping
+    - parameter dismissHandler: An optional handler to be executed after the showcase is dismissed by tapping outside
+                                If `showsDismissButton` is set to true, this will be executed when tapping the button.
+    - parameter tapInsideHandler: An optional handler to be executed after the showcase is dismissed by tapping inside
+    - parameter showsDismissButton: Whether to show a Dismiss button at the top-right of the screen
     */
-    public init(title: String, message: String, key: String?, dismissHandler: (() -> Void)?) {
+    public init(title: String,
+                message: String,
+                key: String?,
+                dismissHandler: (() -> Void)?,
+                tapInsideHandler: (()->Void)? = nil,
+                showsDismissButton: Bool = false) {
 
         titleLabel = UILabel(frame: CGRect.zero)
         messageLabel = UILabel(frame: CGRect.zero)
@@ -80,6 +116,8 @@ open class CTShowcaseView: UIView {
         self.message = message
         self.key = key
         self.dismissHandler = dismissHandler
+        self.tapInsideHandler = tapInsideHandler
+        self.showsDismissButton = showsDismissButton
         
         translatesAutoresizingMaskIntoConstraints = false
         backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.75)
@@ -99,6 +137,18 @@ open class CTShowcaseView: UIView {
         messageLabel.textAlignment = .center
         messageLabel.text = message
         addSubview(messageLabel)
+        
+        if showsDismissButton {
+            let dismissButton = UIButton(frame: CGRect.zero)
+            dismissButton.setTitleColor(backgroundColor, for: .normal)
+            dismissButton.backgroundColor = .white
+            dismissButton.setTitle(DismissButtonConstants.title, for: .normal)
+            dismissButton.titleLabel?.font = .boldSystemFont(ofSize: DismissButtonConstants.fontSize)
+            dismissButton.layer.cornerRadius = DismissButtonConstants.cornerRadius
+            dismissButton.addTarget(self, action: #selector(dismiss), for: .touchDown)
+            self.dismissButton = dismissButton
+            addSubview(dismissButton)
+        }
         
         NotificationCenter.default.addObserver(self, selector: #selector(CTShowcaseView.enteredForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
     }
@@ -151,6 +201,10 @@ open class CTShowcaseView: UIView {
         
         titleLabel.frame = titleRegion
         messageLabel.frame = messageRegion
+        
+        if self.showsDismissButton {
+            dismissButton?.frame = self.dismissButtonRect
+        }
 
         updateEffectLayer()
         setNeedsDisplay()
@@ -225,12 +279,14 @@ open class CTShowcaseView: UIView {
         }
     }
     
-    open func dismiss() {
+    @objc open func dismiss(withHandler: Bool = true) {
         UIView.animate(withDuration: CTGlobalConstants.DefaultAnimationDuration, animations: { () -> Void in
             self.alpha = 0
         }, completion: { (finished) -> Void in
             self.removeFromSuperview()
-            self.dismissHandler?()
+            if withHandler {
+                self.dismissHandler?()
+            }
         })
     }
 
@@ -300,7 +356,27 @@ open class CTShowcaseView: UIView {
     }
     
     override open func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        // Was a tapInsideHandler set and was the touch inside the highlighted area?
+        // If so, run the handler and then dismiss this view.
+        if let tapInsideHandler = self.tapInsideHandler,
+            let touch = touches.first, isTouchInsideTargetView(touch.location(in: targetView)) {
+            tapInsideHandler()
+            dismiss(withHandler: false)
+            return
+        }
+        
+        // If the dismiss button was enabled, this touch event should be ignored because
+        // only the button target can dismiss the view.
+        guard !self.showsDismissButton else {
+            NSLog("Ignoring touch as the dismiss button is enabled.")
+            return
+        }
+        
         dismiss()
+    }
+    
+    private func isTouchInsideTargetView(_ coordinates: CGPoint) -> Bool {
+        return self.targetView?.point(inside: coordinates, with: nil) ?? false
     }
     
     // MARK: Notification handler
