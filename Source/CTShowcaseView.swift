@@ -274,6 +274,10 @@ open class CTShowcaseView: UIView {
         }
     }
     
+    @objc private func dismissWithHandler() {
+        self.dismiss(withHandler: true)
+    }
+    
     @objc open func dismiss(withHandler: Bool = true) {
         UIView.animate(withDuration: CTGlobalConstants.DefaultAnimationDuration, animations: { () -> Void in
             self.alpha = 0
@@ -294,7 +298,7 @@ open class CTShowcaseView: UIView {
         dismissButton.setTitle(ButtonConstants.dismissTitle, for: .normal)
         dismissButton.titleLabel?.font = .boldSystemFont(ofSize: ButtonConstants.fontSize)
         dismissButton.layer.cornerRadius = ButtonConstants.cornerRadius
-        dismissButton.addTarget(self, action: #selector(dismiss), for: .touchDown)
+        dismissButton.addTarget(self, action: #selector(dismissWithHandler), for: .touchDown)
         self.dismissButton = dismissButton
         self.hasDismissButton = true
         addSubview(dismissButton)

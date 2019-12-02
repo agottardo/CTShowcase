@@ -18,10 +18,10 @@ class ViewController: UIViewController {
                                       message: "Here's a brand new button you can tap!",
                                       key: nil,
                                       dismissHandler: { () -> Void in
-                                        print("tapped outside")
+                                        print("Dismiss handler")
         },
                                       tapInsideHandler: { () -> Void in
-                                        print("tapped inside")
+                                        print("Tap inside handler")
         })
         showcase.addDismissButton()
         showcase.addActionButton(title: "Next", target: self, selector: #selector(test))
