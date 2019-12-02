@@ -22,7 +22,9 @@ class ViewController: UIViewController {
         },
                                       tapInsideHandler: { () -> Void in
                                         print("tapped inside")
-        }, showsDismissButton: true)
+        })
+        showcase.addDismissButton()
+        showcase.addActionButton(title: "Next", target: self, selector: #selector(test))
         
         let highlighter = CTDynamicGlowHighlighter()
         highlighter.highlightColor = UIColor.yellow
@@ -34,6 +36,10 @@ class ViewController: UIViewController {
         
         showcase.setup(for: self.button, offset: CGPoint.zero, margin: 0)
         showcase.show()
+    }
+    
+    @objc private func test() {
+        NSLog("pressed next")
     }
 }
 
