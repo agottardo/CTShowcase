@@ -313,6 +313,7 @@ open class CTShowcaseView: UIView {
         actionButton.titleLabel?.font = .boldSystemFont(ofSize: ButtonConstants.fontSize)
         actionButton.layer.cornerRadius = ButtonConstants.cornerRadius
         actionButton.addTarget(target, action: selector, for: .touchDown)
+        actionButton.addTarget(self, action: #selector(dismiss), for: .touchDown)
         self.actionButton = actionButton
         addSubview(actionButton)
     }
