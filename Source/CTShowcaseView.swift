@@ -16,19 +16,21 @@ open class CTShowcaseView: UIView {
         static let DefaultAnimationDuration = 0.5
     }
     
-    private struct DismissButtonConstants {
-        /// Title of the button
-        static let title: String = "X"
-        /// Margin from the top of the screen to the top of the dismiss button
-        static let topMargin: CGFloat = 40.0
-        /// Margin from the right side of the screen to the top of the dismiss button
-        static let rightMargin: CGFloat = 25.0
+    public struct ButtonConstants {
+        /// Title of the dismiss button
+        public static let dismissTitle: String = "X"
+        /// Margin from the top of the screen to the buttons
+        public static let topMargin: CGFloat = 50.0
+        /// Margin from the left-right side of the screen to the buttons
+        public static let lateralMargin: CGFloat = 25.0
         /// Width and height of the dismiss button
-        static let sideLength: CGFloat = 40.0
-        /// Font size of the "X" text
-        static let fontSize: CGFloat = 18.0
-        /// Corner radius for the button, dividing side length by two gives a circle
-        static let cornerRadius: CGFloat = sideLength / 2
+        public static let buttonsHeight: CGFloat = 40.0
+        /// Font size of the button titles
+        public static let fontSize: CGFloat = 18.0
+        /// Corner radius for the dismiss button, dividing side length by two gives a circle
+        public static let cornerRadius: CGFloat = buttonsHeight / 2
+        /// Width of the action button
+        public static let actionButtonWidth: CGFloat = 80.0
     }
 
     // MARK: Properties
@@ -45,6 +47,9 @@ open class CTShowcaseView: UIView {
     /// X button at the top-right
     public var dismissButton: UIButton?
     
+    /// Custom button at the top-left
+    public var actionButton: UIButton?
+    
     private let containerView: UIView = UIApplication.shared.keyWindow!
     private var targetView: UIView?
     private var targetRect: CGRect = CGRect.zero
@@ -55,7 +60,7 @@ open class CTShowcaseView: UIView {
     private var key: String?
     private var dismissHandler: (() -> ())?
     private var tapInsideHandler: (() -> ())?
-    private var showsDismissButton: Bool = false
+    private var hasDismissButton: Bool = false
     
     private var targetOffset = CGPoint.zero
     private var targetMargin: CGFloat = 0
@@ -65,11 +70,19 @@ open class CTShowcaseView: UIView {
     private var observing = false
     
     private var dismissButtonRect: CGRect {
-        typealias Constants = DismissButtonConstants
-        return CGRect(x: containerView.frame.size.width - Constants.rightMargin - Constants.sideLength,
+        typealias Constants = ButtonConstants
+        return CGRect(x: containerView.frame.size.width - Constants.lateralMargin - Constants.buttonsHeight,
                       y: Constants.topMargin,
-                      width: Constants.sideLength,
-                      height: Constants.sideLength)
+                      width: Constants.buttonsHeight,
+                      height: Constants.buttonsHeight)
+    }
+    
+    private var actionButtonRect: CGRect {
+        typealias Constants = ButtonConstants
+        return CGRect(x: Constants.lateralMargin,
+                      y: Constants.topMargin,
+                      width: 80.0,
+                      height: Constants.buttonsHeight)
     }
     
     // MARK: Class lifecyle
@@ -99,8 +112,7 @@ open class CTShowcaseView: UIView {
                 message: String,
                 key: String?,
                 dismissHandler: (() -> Void)?,
-                tapInsideHandler: (()->Void)? = nil,
-                showsDismissButton: Bool = false) {
+                tapInsideHandler: (()->Void)? = nil) {
 
         titleLabel = UILabel(frame: CGRect.zero)
         messageLabel = UILabel(frame: CGRect.zero)
@@ -117,7 +129,6 @@ open class CTShowcaseView: UIView {
         self.key = key
         self.dismissHandler = dismissHandler
         self.tapInsideHandler = tapInsideHandler
-        self.showsDismissButton = showsDismissButton
         
         translatesAutoresizingMaskIntoConstraints = false
         backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.75)
@@ -137,18 +148,6 @@ open class CTShowcaseView: UIView {
         messageLabel.textAlignment = .center
         messageLabel.text = message
         addSubview(messageLabel)
-        
-        if showsDismissButton {
-            let dismissButton = UIButton(frame: CGRect.zero)
-            dismissButton.setTitleColor(backgroundColor, for: .normal)
-            dismissButton.backgroundColor = .white
-            dismissButton.setTitle(DismissButtonConstants.title, for: .normal)
-            dismissButton.titleLabel?.font = .boldSystemFont(ofSize: DismissButtonConstants.fontSize)
-            dismissButton.layer.cornerRadius = DismissButtonConstants.cornerRadius
-            dismissButton.addTarget(self, action: #selector(dismiss), for: .touchDown)
-            self.dismissButton = dismissButton
-            addSubview(dismissButton)
-        }
         
         NotificationCenter.default.addObserver(self, selector: #selector(CTShowcaseView.enteredForeground), name: UIApplication.willEnterForegroundNotification, object: nil)
     }
@@ -201,10 +200,6 @@ open class CTShowcaseView: UIView {
         
         titleLabel.frame = titleRegion
         messageLabel.frame = messageRegion
-        
-        if self.showsDismissButton {
-            dismissButton?.frame = self.dismissButtonRect
-        }
 
         updateEffectLayer()
         setNeedsDisplay()
@@ -289,6 +284,38 @@ open class CTShowcaseView: UIView {
             }
         })
     }
+    
+    /// Adds a dismiss button at the top-right of the view.
+    /// - Parameter title: default is "X"
+    open func addDismissButton(title: String = ButtonConstants.dismissTitle) {
+        let dismissButton = UIButton(frame: self.dismissButtonRect)
+        dismissButton.setTitleColor(backgroundColor, for: .normal)
+        dismissButton.backgroundColor = .white
+        dismissButton.setTitle(ButtonConstants.dismissTitle, for: .normal)
+        dismissButton.titleLabel?.font = .boldSystemFont(ofSize: ButtonConstants.fontSize)
+        dismissButton.layer.cornerRadius = ButtonConstants.cornerRadius
+        dismissButton.addTarget(self, action: #selector(dismiss), for: .touchDown)
+        self.dismissButton = dismissButton
+        self.hasDismissButton = true
+        addSubview(dismissButton)
+    }
+    
+    /// Adds an action button at the top-left of the view.
+    /// - Parameters:
+    ///   - title: Title of the button
+    ///   - target: target class
+    ///   - selector: selector to hit
+    open func addActionButton(title: String, target: Any, selector: Selector) {
+        let actionButton = UIButton(frame: self.actionButtonRect)
+        actionButton.setTitleColor(backgroundColor, for: .normal)
+        actionButton.backgroundColor = .white
+        actionButton.setTitle(title, for: .normal)
+        actionButton.titleLabel?.font = .boldSystemFont(ofSize: ButtonConstants.fontSize)
+        actionButton.layer.cornerRadius = ButtonConstants.cornerRadius
+        actionButton.addTarget(target, action: selector, for: .touchDown)
+        self.actionButton = actionButton
+        addSubview(actionButton)
+    }
 
     // MARK: Private methods
     
@@ -367,7 +394,7 @@ open class CTShowcaseView: UIView {
         
         // If the dismiss button was enabled, this touch event should be ignored because
         // only the button target can dismiss the view.
-        guard !self.showsDismissButton else {
+        guard !self.hasDismissButton else {
             NSLog("Ignoring touch as the dismiss button is enabled.")
             return
         }
