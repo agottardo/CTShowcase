@@ -32,8 +32,10 @@ class ViewController: UIViewController {
         highlighter.glowSize = 5
         highlighter.maxOffset = 10
         
-        showcase.highlighter = highlighter
         
+        showcase.highlighter = highlighter
+        showcase.titleLabel.textAlignment = .left
+        showcase.messageLabel.textAlignment = .left
         showcase.setup(for: self.button, offset: CGPoint.zero, margin: 0)
         showcase.show()
     }

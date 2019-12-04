@@ -337,13 +337,23 @@ open class CTShowcaseView: UIView {
     
     private func textRegionsForHighlightedRect(_ rect: CGRect) -> (CGRect, CGRect) {
     
-        let margin: CGFloat = 15.0
+        var horizontalMargin: CGFloat = 15.0
+        let verticalMargin: CGFloat = 15.0
+        
+        // Handles the "notch" on iPhone X-like devices, adding some additional horizontal margin.
+        if #available(iOS 11.0, *),
+            let leftInset = UIApplication.shared.keyWindow?.safeAreaInsets.left, leftInset > 0 {
+            horizontalMargin += leftInset
+        }
+        
         let spacingBetweenTitleAndText: CGFloat = 10.0
         
-        let titleSize = titleLabel.sizeThatFits(CGSize(width: containerView.frame.size.width - 2 * margin, height: CGFloat.greatestFiniteMagnitude))
-        let messageSize = messageLabel.sizeThatFits(CGSize(width: containerView.frame.size.width - 2 * margin, height: CGFloat.greatestFiniteMagnitude))
+        let titleSize = titleLabel.sizeThatFits(CGSize(width: containerView.frame.size.width - 2 * horizontalMargin,
+                                                       height: CGFloat.greatestFiniteMagnitude))
+        let messageSize = messageLabel.sizeThatFits(CGSize(width: containerView.frame.size.width - 2 * horizontalMargin,
+                                                           height: CGFloat.greatestFiniteMagnitude))
         
-        let textRegionWidth = containerView.frame.size.width - 2 * margin
+        let textRegionWidth = containerView.frame.size.width - 2 * horizontalMargin
         let textRegionHeight = titleSize.height + messageSize.height + spacingBetweenTitleAndText
     
         let spacingBelowHighlight = containerView.frame.size.height - targetRect.origin.y - targetRect.size.height
@@ -351,14 +361,19 @@ open class CTShowcaseView: UIView {
         
         // If there is more space above the highlight than below, then display the text above the highlight, else display it below
         if (targetRect.origin.y > spacingBelowHighlight) {
-            originY = targetRect.origin.y - textRegionHeight - margin * 2
-        }
-        else {
-            originY = targetRect.origin.y + targetRect.size.height + margin * 2
+            originY = targetRect.origin.y - textRegionHeight - verticalMargin * 2
+        } else {
+            originY = targetRect.origin.y + targetRect.size.height + verticalMargin * 2
         }
         
-        let titleRegion = CGRect(x: margin, y: originY, width: textRegionWidth, height: titleSize.height)
-        let messageRegion = CGRect(x: margin, y: originY + spacingBetweenTitleAndText + titleSize.height, width: textRegionWidth, height: messageSize.height)
+        let titleRegion = CGRect(x: horizontalMargin,
+                                 y: originY,
+                                 width: textRegionWidth,
+                                 height: titleSize.height)
+        let messageRegion = CGRect(x: horizontalMargin,
+                                   y: originY + spacingBetweenTitleAndText + titleSize.height,
+                                   width: textRegionWidth,
+                                   height: messageSize.height)
    
         return (titleRegion, messageRegion)
     }
