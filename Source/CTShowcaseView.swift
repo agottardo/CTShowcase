@@ -192,7 +192,7 @@ open class CTShowcaseView: UIView {
         let targetSize = targetRect.width * targetRect.height
         
         if overlapSize/targetSize < 0.75 {
-            dismiss()
+            dismiss(withHandler: false)
             return
         }
         
